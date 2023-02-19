@@ -17,5 +17,3 @@ export const fetchPhotoByQuery = async (query, page = 1) => {
   return data;
 };
 
-
-console.log(fetchPhotoByQuery())
