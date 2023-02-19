@@ -1,4 +1,3 @@
-import PropTypes from 'prop-types';
 import css from '../Button/Button.module.css';
 
 export function Button(data) {
