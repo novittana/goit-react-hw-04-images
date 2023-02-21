@@ -5,7 +5,8 @@ import { fetchPhotoByQuery } from '../services/api';
 import { Button } from './Button/Button';
 import { Loader } from './Loader/Loader';
 import { Modal } from './Modal/Modal';
-import css from './App.module.css'
+import { NotificationMessage } from './NotificationMessage/NotificationMessage';
+import css from './App.module.css';
 
 export class App extends Component {
   state = {
@@ -56,14 +57,8 @@ export class App extends Component {
     this.setState({ largeImageURL: imgUrl, showModal: true });
   };
 
-  handleModalClose = () => {
-    this.setState({ showModal: false });
-  };
-
-  handleKeyDown = event => {
-    if (event.key === 'Escape') {
-      this.setState({ showModal: false });
-    }
+  toggleModal = () => {
+    this.setState(({ showModal }) => ({ showModal: !showModal }));
   };
 
   render() {
@@ -71,23 +66,24 @@ export class App extends Component {
       this.state;
 
     return (
-      <div
-        onKeyDown={this.handleKeyDown.bind(this)}
-        tabIndex={0}
-        className={css.app}
-      >
+      <div tabIndex={0} className={css.app}>
         <Searchbar onSubmit={this.handleFormSubmit} />
-      
+
+        {hits.length === 0 && (
+          <NotificationMessage>No data to display</NotificationMessage>
+        )}
+        {hits && (
           <ImageGallery
             hits={hits}
             onSmallImageClick={this.handleSmallImageClick.bind(this)}
           />
-          {showLoadMore && <Button handleLoadMore={this.handleLoadMore} />}
+        )}
+        {showLoadMore && <Button handleLoadMore={this.handleLoadMore} />}
         {isLoading && <Loader />}
         {showModal && (
           <Modal
             src={largeImageURL}
-            onCloseClick={this.handleModalClose.bind(this)}
+            onCloseClick={this.toggleModal.bind(this)}
           />
         )}
       </div>
