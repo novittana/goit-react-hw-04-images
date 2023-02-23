@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import { useState, useEffect } from 'react';
 import { Searchbar } from './Searchbar/Searchbar';
 import { ImageGallery } from './ImageGallery/ImageGallery';
 import { fetchPhotoByQuery } from '../services/api';
@@ -8,85 +8,69 @@ import { Modal } from './Modal/Modal';
 import { NotificationMessage } from './NotificationMessage/NotificationMessage';
 import css from './App.module.css';
 
-export class App extends Component {
-  state = {
-    query: '',
-    hits: [],
-    page: 1,
-    isLoading: false,
-    error: '',
-    showLoadMore: false,
-    showModal: false,
-    largeImageURL: null,
-  };
+export function App () {
+  const [query, setQuery] = useState('');
+  const [hits, setHits] = useState([]);
+  const [page, setPage] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [showLoadMore, setShowLoadMore] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [largeImageURL, setLargeImageURL] = useState(null);
 
-  handleFormSubmit = query => {
-    this.setState({
-      hits: [],
-      query,
-      page: 1,
-    });
-  };
-
-  getLargeImage = largeImageURL => {
-    this.setState({ largeImageURL });
-  };
-
-  async componentDidUpdate(_, prevState) {
-    const { query, page } = this.state;
-    if (prevState.query !== query || prevState.page !== page) {
-      this.setState({ isLoading: true });
+  useEffect(() => {
+    if (!query) return;
+    const getHits = async () => {
+      setIsLoading(true);
       try {
         const { hits, totalHits } = await fetchPhotoByQuery(query, page);
-        this.setState(prevState => ({
-          hits: [...prevState.hits, ...hits],
-          showLoadMore: page < Math.ceil(totalHits / 12),
-        }));
+        if (hits.length === 0) {
+          alert('No data found');
+        }
+        setHits(prevHits => [...prevHits, ...hits]);
+        setShowLoadMore(page < Math.ceil(totalHits / 12));
       } catch (error) {
+        setError(error.message);
       } finally {
-        this.setState({ isLoading: false });
+        setIsLoading(false);
       }
-    }
-  }
+    };
+    getHits();
+  }, [page, query]);
 
-  handleLoadMore = () => {
-    this.setState(prevState => ({ page: prevState.page + 1 }));
+  const onSubmit = query => {
+    setHits([]);
+    setQuery(query);
+    setPage(1);
   };
 
-  handleSmallImageClick = imgUrl => {
-    this.setState({ largeImageURL: imgUrl, showModal: true });
+  const handleLoadMore = () => {
+    setPage(prevPage => prevPage + 1);
   };
 
-  toggleModal = () => {
-    this.setState(({ showModal }) => ({ showModal: !showModal }));
+  const handleSmallImageClick = imgUrl => {
+    setLargeImageURL(imgUrl);
+    setShowModal(true);
   };
 
-  render() {
-    const { hits, showLoadMore, isLoading, showModal, largeImageURL } =
-      this.state;
+  const toggleModal = () => {
+    setShowModal(!showModal);
+  };
 
-    return (
-      <div tabIndex={0} className={css.app}>
-        <Searchbar onSubmit={this.handleFormSubmit} />
+  return (
+    <div tabIndex={0} className={css.app}>
+      <Searchbar onSubmit={onSubmit} />
 
-        {hits.length === 0 && (
-          <NotificationMessage>No data to display</NotificationMessage>
-        )}
-        {hits && (
-          <ImageGallery
-            hits={hits}
-            onSmallImageClick={this.handleSmallImageClick.bind(this)}
-          />
-        )}
-        {showLoadMore && <Button handleLoadMore={this.handleLoadMore} />}
-        {isLoading && <Loader />}
-        {showModal && (
-          <Modal
-            src={largeImageURL}
-            onCloseClick={this.toggleModal.bind(this)}
-          />
-        )}
-      </div>
-    );
-  }
+      {hits.length === 0 && (
+        <NotificationMessage>No data to display</NotificationMessage>
+      )}
+      {hits && (
+        <ImageGallery hits={hits} onSmallImageClick={handleSmallImageClick} />
+      )}
+      {showLoadMore && <Button handleLoadMore={handleLoadMore} />}
+      {isLoading && <Loader />}
+      {showModal && <Modal src={largeImageURL} onCloseClick={toggleModal} />}
+      {error && <p>Error{error}</p>}
+    </div>
+  );
 }
